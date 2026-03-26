@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ankurah — Login</title>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body { background: #0f0f13; color: #fff; font-family: 'Segoe UI', system-ui, sans-serif; display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh; }
+        .container { background: #1a1a24; padding: 36px 28px; border-radius: 16px; width: 320px; text-align: center; border: 1px solid #2a2a3a; }
+        .branding h1 { color: #a855f7; margin-bottom: 4px; font-size: 28px; letter-spacing: 1px; }
+        .branding p { color: #666; font-size: 13px; margin-bottom: 24px; }
+        .btn { display: block; width: 100%; padding: 13px; border: none; border-radius: 8px; margin: 8px 0; cursor: pointer; font-size: 15px; font-weight: 600; transition: all 0.2s; }
+        .btn:hover { transform: translateY(-1px); }
+        .btn-police { background: #252530; color: #ccc; border: 1px solid #3a3a4a; }
+        .btn-police:hover { background: #30303e; }
+        .btn-victim { background: linear-gradient(135deg, #8b5cf6, #a855f7); color: #fff; }
+        .btn-victim:hover { background: linear-gradient(135deg, #7c3aed, #9333ea); }
+        .form-section { display: none; margin-top: 20px; }
+        .form-section input { width: 100%; padding: 11px 14px; margin-bottom: 10px; border: 1px solid #333; background: #252530; color: #fff; border-radius: 8px; font-size: 14px; outline: none; transition: border 0.2s; }
+        .form-section input:focus { border-color: #a855f7; }
+        .active { display: block; }
+        #error { color: #f87171; font-size: 13px; display: none; margin-bottom: 10px; }
+
+        /* OTP Spinner */
+        .spinner-wrap { display: none; flex-direction: column; align-items: center; gap: 12px; padding: 20px 0; }
+        .spinner-wrap.show { display: flex; }
+        .spinner { width: 32px; height: 32px; border: 3px solid #333; border-top-color: #a855f7; border-radius: 50%; animation: spin 0.8s linear infinite; }
+        @keyframes spin { to { transform: rotate(360deg); } }
+        .spinner-text { color: #888; font-size: 13px; }
+        .back-link { display: inline-block; margin-top: 14px; color: #666; font-size: 12px; cursor: pointer; text-decoration: underline; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="branding">
+            <h1>Ankurah</h1>
+            <p>Safety. Silently.</p>
+        </div>
+
+        <div id="selection">
+            <button class="btn btn-victim" onclick="startVictimFlow()">I Need Help</button>
+            <button class="btn btn-police" onclick="showForm('police')">Police Portal</button>
+        </div>
+
+        <div id="error"></div>
+
+        <!-- Step 1: Enter Phone -->
+        <div id="victim-phone-step" class="form-section">
+            <input type="tel" id="v-phone" placeholder="Phone Number" value="+919876543210">
+            <button class="btn btn-victim" onclick="sendOTP()">Send OTP</button>
+        </div>
+
+        <!-- Step 2: Spinner -->
+        <div id="otp-spinner" class="spinner-wrap">
+            <div class="spinner"></div>
+            <div class="spinner-text">Sending OTP…</div>
+        </div>
+
+        <!-- Step 3: Enter OTP -->
+        <div id="victim-otp-step" class="form-section">
+            <input type="text" id="v-otp" placeholder="Enter 6-digit OTP" maxlength="6" inputmode="numeric">
+            <button class="btn btn-victim" onclick="login('victim')">Verify OTP</button>
+        </div>
+
+        <!-- Police form -->
+        <div id="police-form" class="form-section">
+            <input type="text" id="p-badge" placeholder="Badge ID" value="POLICE-001">
+            <input type="password" id="p-pass" placeholder="Password" value="password">
+            <button class="btn btn-police" onclick="login('police')">Login as Police</button>
+        </div>
+
+        <span class="back-link" id="back-btn" style="display:none;" onclick="resetForms()">← Back</span>
+    </div>
+    <script src="auth.js"></script>
+</body>
+</html>

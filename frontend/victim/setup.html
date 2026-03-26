@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ankurah — Profile Setup</title>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body { background: #0f0f13; color: #fff; font-family: 'Segoe UI', system-ui, sans-serif; min-height: 100vh; display: flex; flex-direction: column; align-items: center; padding: 40px 16px; }
+        .container { background: #1a1a24; padding: 28px 24px; border-radius: 16px; width: 100%; max-width: 380px; border: 1px solid #2a2a3a; }
+        h2 { color: #a855f7; margin-bottom: 4px; font-size: 22px; }
+        .subtitle { color: #666; font-size: 13px; margin-bottom: 20px; }
+        label { display: block; font-size: 12px; color: #888; margin-bottom: 4px; margin-top: 14px; text-transform: uppercase; letter-spacing: 0.5px; }
+        input, select { width: 100%; padding: 11px 14px; border: 1px solid #333; background: #252530; color: #fff; border-radius: 8px; font-size: 14px; outline: none; transition: border 0.2s; }
+        input:focus, select:focus { border-color: #a855f7; }
+        .contact-group { background: #15151e; border-radius: 10px; padding: 14px; margin-top: 10px; border: 1px solid #252530; }
+        .contact-group h4 { color: #a855f7; font-size: 13px; margin-bottom: 8px; }
+        .contact-row { display: flex; gap: 8px; margin-bottom: 8px; }
+        .contact-row input { flex: 1; }
+        .btn { display: block; width: 100%; padding: 13px; border: none; border-radius: 8px; cursor: pointer; font-size: 15px; font-weight: 600; transition: all 0.2s; margin-top: 16px; }
+        .btn:hover { transform: translateY(-1px); }
+        .btn-primary { background: linear-gradient(135deg, #8b5cf6, #a855f7); color: #fff; }
+        .btn-secondary { background: #252530; color: #ccc; border: 1px solid #3a3a4a; margin-top: 10px; }
+
+        /* Safe Zone Section */
+        .safe-zone-section { margin-top: 20px; padding-top: 20px; border-top: 1px solid #252530; }
+        .zone-row { display: flex; gap: 8px; align-items: center; margin-top: 8px; }
+        .zone-row select { flex: 0 0 120px; }
+        .zone-row .btn-loc { flex: 1; padding: 11px 10px; font-size: 12px; background: #252530; color: #a855f7; border: 1px solid #3a3a4a; border-radius: 8px; cursor: pointer; }
+        .zone-tag { display: inline-flex; align-items: center; gap: 6px; background: #252530; padding: 6px 12px; border-radius: 6px; font-size: 12px; margin-top: 8px; margin-right: 6px; color: #a855f7; }
+        .zone-tag .remove { cursor: pointer; color: #f87171; font-weight: bold; }
+
+        /* Toast */
+        .toast { position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%); background: #10b981; color: #fff; padding: 10px 24px; border-radius: 8px; font-size: 14px; font-weight: 600; display: none; z-index: 99; }
+        .toast.show { display: block; animation: fadeInUp 0.3s ease; }
+        @keyframes fadeInUp { from { opacity: 0; transform: translate(-50%, 10px); } to { opacity: 1; transform: translate(-50%, 0); } }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h2>Setup Profile</h2>
+        <p class="subtitle">Your info stays on-device + encrypted server</p>
+
+        <label>Full Name</label>
+        <input type="text" id="v-name" placeholder="e.g. Priya Sharma">
+
+        <label>Phone</label>
+        <input type="tel" id="v-phone" placeholder="+91..." readonly>
+
+        <!-- Emergency Contacts -->
+        <div class="contact-group">
+            <h4>🚨 Emergency Contacts (up to 3)</h4>
+            <div class="contact-row">
+                <input type="text" id="c1-name" placeholder="Name">
+                <input type="tel" id="c1-phone" placeholder="Phone">
+            </div>
+            <div class="contact-row">
+                <input type="text" id="c2-name" placeholder="Name">
+                <input type="tel" id="c2-phone" placeholder="Phone">
+            </div>
+            <div class="contact-row">
+                <input type="text" id="c3-name" placeholder="Name">
+                <input type="tel" id="c3-phone" placeholder="Phone">
+            </div>
+        </div>
+
+        <!-- Safe Zones -->
+        <div class="safe-zone-section">
+            <label>📍 Safe Zones</label>
+            <p class="subtitle" style="margin-bottom:8px;">Mark places where you feel safe</p>
+            <div class="zone-row">
+                <select id="zone-label">
+                    <option value="Home">🏠 Home</option>
+                    <option value="College">🎓 College</option>
+                    <option value="Work">💼 Work</option>
+                </select>
+                <button class="btn-loc" onclick="addSafeZone()">📍 Use My Location</button>
+            </div>
+            <div id="zone-tags"></div>
+        </div>
+
+        <button class="btn btn-primary" onclick="saveProfile()">Save & Continue</button>
+        <button class="btn btn-secondary" onclick="skipToTorch()">Skip for now</button>
+    </div>
+
+    <div class="toast" id="toast"></div>
+
+    <script>
+        const BACKEND_URL = "http://localhost:8000";
+
+        // Auth guard
+        if(!localStorage.getItem("ankurah_token")) {
+            window.location.href = "/auth/login.html";
+        }
+
+        // Pre-fill phone from localStorage
+        const phone = localStorage.getItem("ankurah_phone") || "";
+        document.getElementById("v-phone").value = phone;
+
+        // Safe zones queue (saved after profile)
+        let pendingZones = [];
+
+        function addSafeZone() {
+            const label = document.getElementById("zone-label").value;
+            // Check if already added this label
+            if(pendingZones.find(z => z.label === label)) {
+                showToast("Already added " + label);
+                return;
+            }
+
+            if(!navigator.geolocation) {
+                showToast("Geolocation not available");
+                return;
+            }
+
+            navigator.geolocation.getCurrentPosition(
+                pos => {
+                    pendingZones.push({
+                        label: label,
+                        lat: pos.coords.latitude,
+                        lng: pos.coords.longitude,
+                        radius_meters: 100
+                    });
+                    renderZoneTags();
+                    showToast(label + " marked ✓");
+                },
+                () => {
+                    // Fallback for demo
+                    pendingZones.push({
+                        label: label,
+                        lat: 12.9716 + (Math.random() * 0.01),
+                        lng: 77.5946 + (Math.random() * 0.01),
+                        radius_meters: 100
+                    });
+                    renderZoneTags();
+                    showToast(label + " marked (demo coords) ✓");
+                }
+            );
+        }
+
+        function renderZoneTags() {
+            const container = document.getElementById("zone-tags");
+            container.innerHTML = pendingZones.map((z, i) =>
+                `<span class="zone-tag">${z.label} <span class="remove" onclick="removeZone(${i})">✕</span></span>`
+            ).join('');
+        }
+
+        function removeZone(i) {
+            pendingZones.splice(i, 1);
+            renderZoneTags();
+        }
+
+        async function saveProfile() {
+            const name = document.getElementById("v-name").value.trim();
+            if(!name) { showToast("Please enter your name"); return; }
+
+            // Build contacts array
+            const contacts = [];
+            for(let i = 1; i <= 3; i++) {
+                const cname = document.getElementById(`c${i}-name`).value.trim();
+                const cphone = document.getElementById(`c${i}-phone`).value.trim();
+                if(cname && cphone) contacts.push({ name: cname, phone: cphone });
+            }
+
+            // Store locally for torch payload
+            localStorage.setItem("ankurah_name", name);
+            localStorage.setItem("ankurah_contacts", JSON.stringify(contacts));
+
+            const token = localStorage.getItem("ankurah_token");
+
+            try {
+                // Save victim profile
+                await fetch(`${BACKEND_URL}/api/victims`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+                    body: JSON.stringify({
+                        name: name,
+                        phone: phone,
+                        contacts_json: JSON.stringify(contacts)
+                    })
+                });
+
+                // Save safe zones
+                for(const zone of pendingZones) {
+                    await fetch(`${BACKEND_URL}/api/safe-zones`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+                        body: JSON.stringify({
+                            victim_id: phone,
+                            label: zone.label,
+                            lat: zone.lat,
+                            lng: zone.lng,
+                            radius_meters: zone.radius_meters
+                        })
+                    });
+                }
+
+                showToast("Profile saved ✓");
+                setTimeout(() => { window.location.href = "/victim/home.html"; }, 800);
+            } catch(e) {
+                showToast("Error saving — continuing anyway");
+                setTimeout(() => { window.location.href = "/victim/home.html"; }, 800);
+            }
+        }
+
+        function skipToTorch() {
+            window.location.href = "/victim/home.html";
+        }
+
+        function showToast(msg) {
+            const t = document.getElementById('toast');
+            t.innerText = msg;
+            t.classList.add('show');
+            setTimeout(() => t.classList.remove('show'), 2500);
+        }
+    </script>
+</body>
+</html>

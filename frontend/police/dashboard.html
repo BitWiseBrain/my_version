@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ankurah Police</title>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body { background: #f0f1f5; font-family: 'Segoe UI', system-ui, sans-serif; height: 100vh; display: flex; flex-direction: column; overflow: hidden; }
+
+        header { background: linear-gradient(135deg, #111827, #1e1b4b); color: white; padding: 12px 24px; display: flex; justify-content: space-between; align-items: center; z-index: 50; }
+        .header-left { display: flex; align-items: center; gap: 12px; }
+        .health-dot { width: 8px; height: 8px; background: #22c55e; border-radius: 50%; display: inline-block; }
+        .health-dot.error { background: #ef4444; }
+
+        .stats-bar { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; padding: 12px 24px; background: #fff; border-bottom: 1px solid #e2e4ea; }
+        .stat-card { background: #f8f9fb; padding: 10px 16px; border-radius: 8px; border: 1px solid #eee; }
+        .stat-val { font-size: 20px; font-weight: 800; color: #1e1b4b; }
+        .stat-label { font-size: 11px; color: #666; text-transform: uppercase; font-weight: 700; letter-spacing: 0.5px; }
+
+        .layout { display: flex; flex: 1; overflow: hidden; }
+        #map { flex: 1; }
+
+        .sidebar { width: 380px; background: #fff; border-left: 1px solid #e2e4ea; display: flex; flex-direction: column; }
+        #victim-panel { display: none; padding: 20px; border-bottom: 3px solid #f8f9fb; background: #fff; }
+        #victim-panel.show { display: block; }
+        .victim-name { font-size: 18px; font-weight: 700; color: #1e1b4b; }
+        
+        .threat-badge { display: inline-block; padding: 3px 10px; border-radius: 4px; font-size: 11px; font-weight: 700; text-transform: uppercase; cursor: help; position: relative; }
+        .threat-high { background: #fef2f2; color: #dc2626; border: 1px solid #fecaca; }
+        .threat-medium { background: #fffbeb; color: #d97706; border: 1px solid #fde68a; }
+        .threat-low { background: #f0fdf4; color: #16a34a; border: 1px solid #bbf7d0; }
+        
+        /* Tooltip style */
+        .threat-badge:hover .tooltip { display: block; }
+        .tooltip { display: none; position: absolute; bottom: 100%; left: 0; background: #333; color: #fff; padding: 8px; border-radius: 4px; width: 180px; font-size: 10px; text-transform: none; font-weight: 400; z-index: 100; margin-bottom: 5px; }
+
+        .timeline-container { flex: 1; overflow-y: auto; padding: 20px; }
+        .timeline-item { position: relative; padding-left: 30px; margin-bottom: 24px; cursor: pointer; }
+        .timeline-item::after { content: ''; position: absolute; left: 0; top: 4px; width: 14px; height: 14px; border-radius: 50%; background: #fff; border: 3px solid #eef0f5; }
+        .timeline-item.active::after { border-color: #ef4444; background: #ef4444; }
+        .tm-title { font-size: 15px; font-weight: 700; color: #333; }
+
+        #loading-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #fff; z-index: 1000; display: flex; align-items: center; justify-content: center; flex-direction: column; gap: 20px; }
+        
+        .btn-group { display: flex; gap: 8px; padding: 12px 24px; background: #f8f9fb; border-bottom: 1px solid #e2e4ea; }
+        .btn-sm { padding: 6px 12px; border-radius: 6px; font-size: 12px; font-weight: 600; cursor: pointer; border: 1px solid #ddd; background: #fff; }
+        .btn-sm.active { background: #3b82f6; color: #fff; border-color: #2563eb; }
+
+        #error-banner { position: fixed; top: 0; width: 100%; background: #ef4444; color: #fff; text-align: center; padding: 8px; font-size: 13px; font-weight: 700; display: none; z-index: 1001; }
+    </style>
+</head>
+<body>
+    <div id="error-banner">⚠️ Connection issue. Reconnecting...</div>
+    <div id="loading-overlay">
+        <p>Ankurah Command Center Initializing...</p>
+    </div>
+
+    <header>
+        <div class="header-left">
+            <span class="health-dot" id="health-dot"></span>
+            <span style="font-weight: 800; letter-spacing: 0.5px;">ANKURAH — LIVE MONITOR</span>
+        </div>
+        <div style="display:flex; gap:16px; align-items:center;">
+            <button class="btn-sm" onclick="exportToCSV()">Export Report</button>
+            <button class="btn-sm" onclick="logout()" style="color:#ef4444;">Logout</button>
+        </div>
+    </header>
+
+    <div class="stats-bar">
+        <div class="stat-card">
+            <div class="stat-label">Active Alerts</div>
+            <div class="stat-val" id="stat-active">0</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-label">Responding</div>
+            <div class="stat-val" id="stat-responding">0</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-label">Resolved Today</div>
+            <div class="stat-val" id="stat-resolved">0</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-label">Impact Score</div>
+            <div class="stat-val" id="stat-impact">100%</div>
+        </div>
+    </div>
+
+    <div class="btn-group">
+        <button class="btn-sm active" id="btn-distress" onclick="toggleLayer('distress')">Alert Pins</button>
+        <button class="btn-sm" id="btn-heatmap" onclick="toggleLayer('heatmap')">Heatmap</button>
+    </div>
+
+    <div class="layout">
+        <div id="map"></div>
+        <div class="sidebar">
+            <div id="victim-panel">
+                <div class="victim-name" id="vp-name"></div>
+                <div id="vp-threat" style="margin-top:8px;"></div>
+                <div id="vp-safe-zone"></div>
+                <div id="vp-contacts" style="margin-top:12px;"></div>
+                <select id="vp-status" onchange="updateStatusFromPanel()" style="width:100%; margin-top:20px; padding:10px; border-radius:6px; background:#f0f1f5; border:none; font-weight:600;">
+                    <option value="active">Active</option>
+                    <option value="responding">Responding</option>
+                    <option value="resolved">Resolved</option>
+                </select>
+            </div>
+            <div class="timeline-container">
+                <div id="timeline-list"></div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script src="https://leaflet.github.io/Leaflet.heat/dist/leaflet-heat.js"></script>
+    <script src="https://cdn.socket.io/4.5.4/socket.io.min.js"></script>
+    <script src="dashboard.js"></script>
+</body>
+</html>

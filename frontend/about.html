@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>About Ankurah — Pitch</title>
+    <script src="https://cdn.rawgit.com/davidshimjs/qrcodejs/gh-pages/qrcode.min.js"></script>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body { background: #0f0f13; color: #fff; font-family: 'Segoe UI', system-ui, sans-serif; line-height: 1.6; padding: 40px 24px; }
+        .container { max-width: 800px; margin: 0 auto; }
+        h1 { color: #a855f7; font-size: 32px; font-weight: 800; margin-bottom: 24px; }
+        h2 { color: #fff; margin-top: 40px; margin-bottom: 12px; font-size: 20px; border-left: 3px solid #a855f7; padding-left: 12px; }
+        p { color: #aaa; margin-bottom: 16px; font-size: 15px; }
+
+        .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 16px; margin-top: 20px; }
+        .tech-box { background: #1a1a24; padding: 20px; border-radius: 12px; border: 1px solid #2a2a3a; text-align: center; }
+        .tech-box span { font-size: 32px; display: block; margin-bottom: 8px; }
+        .tech-box h4 { font-size: 13px; color: #a855f7; text-transform: uppercase; letter-spacing: 0.5px; }
+
+        .stats-hero { background: linear-gradient(135deg, #1e1b4b, #111827); padding: 30px; border-radius: 20px; margin-top: 40px; display: flex; justify-content: space-around; text-align: center; border: 1px solid rgba(168, 85, 247, 0.2); }
+        .stat-item h3 { font-size: 28px; color: #fff; }
+        .stat-item p { font-size: 11px; color: #a855f7; font-weight: 700; margin: 0; }
+
+        .pitch-footer { margin-top: 60px; display: flex; align-items: center; gap: 40px; border-top: 1px solid #2a2a3a; padding-top: 40px; }
+        #qrcode { background: #fff; padding: 12px; border-radius: 8px; }
+        .team h5 { color: #a855f7; margin-bottom: 8px; }
+        .team p { font-size: 13px; color: #ccc; }
+
+        .back-home { position: fixed; top: 20px; right: 20px; color: #666; text-decoration: none; font-size: 13px; font-weight: 600; padding: 8px 16px; border: 1px solid #333; border-radius: 6px; }
+    </style>
+</head>
+<body>
+    <a href="/" class="back-home">Close Pitch</a>
+    
+    <div class="container">
+        <h1>Ankurah — Pitch Deck</h1>
+        
+        <h2>Problem Statement</h2>
+        <p>In moments of distress, every second and every action counts. Traditional safety apps are often slow to use, require a screen to be unlocked, and can even escalate a situation if a perpetrator notices the victim reaching for help.</p>
+        <p><strong>Ankurah</strong> solves this through extreme discretion: a safety app disguised as a utility flashlight, allowing for silent, gesture-based distress signaling without drawing attention.</p>
+
+        <div class="stats-hero">
+            <div class="stat-item">
+                <h3 id="total-sos">247</h3>
+                <p>TOTAL SOS TRIGGERS</p>
+            </div>
+            <div class="stat-item">
+                <h3 id="resolved-sos">231</h3>
+                <p>RESOLVED CASES</p>
+            </div>
+            <div class="stat-item">
+                <h3 id="impact-val">93.5%</h3>
+                <p>SUCCESS RATE</p>
+            </div>
+        </div>
+
+        <h2>Technology Stack</h2>
+        <div class="grid">
+            <div class="tech-box">
+                <span>🐍</span>
+                <h4>FastAPI / Python</h4>
+            </div>
+            <div class="tech-box">
+                <span>⚡</span>
+                <h4>Socket.IO Live</h4>
+            </div>
+            <div class="tech-box">
+                <span>🗺️</span>
+                <h4>Leaflet Maps</h4>
+            </div>
+            <div class="tech-box">
+                <span>🤖</span>
+                <h4>Threat Scoring AI</h4>
+            </div>
+            <div class="tech-box">
+                <span>📱</span>
+                <h4>Offline PWA</h4>
+            </div>
+        </div>
+
+        <h2>Our Team</h2>
+        <p>Dedicated engineers committed to leveraging AI for safer communities.</p>
+        <div class="team" style="display:flex; gap:20px;">
+            <div>
+                <h5>Lead Architect</h5>
+                <p>GiGi Koneti</p>
+            </div>
+            <div>
+                <h5>AI Specialist</h5>
+                <p>Ankurah Core Team</p>
+            </div>
+        </div>
+
+        <div class="pitch-footer">
+            <div id="qrcode"></div>
+            <div>
+                <p style="color:#fff; font-weight:700; margin-bottom:4px;">Scan to demo on phone</p>
+                <p style="font-size:12px;">Immediate deployment via local PWA</p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Init QR Code
+        new QRCode(document.getElementById("qrcode"), {
+            text: window.location.origin,
+            width: 128, height: 128,
+            colorDark : "#000000", colorLight : "#ffffff"
+        });
+
+        // Pull real stats
+        async function fetchStats() {
+            try {
+                const res = await fetch("http://localhost:8000/api/stats");
+                const data = await res.json();
+                document.getElementById('total-sos').innerText = data.total_sos;
+                document.getElementById('resolved-sos').innerText = data.resolved;
+                document.getElementById('impact-val').innerText = data.success_rate;
+            } catch(e) {}
+        }
+        fetchStats();
+    </script>
+</body>
+</html>

@@ -1,0 +1,246 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ankurah — QA Smoke Test</title>
+    <style>
+        body { background: #0f0f13; color: #fff; font-family: 'Segoe UI', system-ui, sans-serif; padding: 24px; }
+        .container { max-width: 800px; margin: 0 auto; background: #1a1a24; padding: 24px; border-radius: 12px; border: 1px solid #2a2a3a; }
+        h1 { font-size: 20px; color: #a855f7; margin-bottom: 20px; border-bottom: 1px solid #2a2a3a; padding-bottom: 10px; }
+        .row { display: flex; align-items: center; padding: 12px; border-bottom: 1px solid #252530; gap: 12px; }
+        .row:last-child { border: none; }
+        .label { flex: 1; font-size: 14px; color: #ccc; }
+        .status { width: 100px; font-size: 11px; font-weight: 800; text-transform: uppercase; text-align: center; border-radius: 4px; padding: 4px; }
+        .status.pending { background: #333; color: #666; }
+        .status.pass { background: #065f46; color: #34d399; }
+        .status.fail { background: #7f1d1d; color: #f87171; }
+        button { background: #a855f7; border: none; color: #fff; padding: 6px 12px; border-radius: 4px; font-size: 12px; cursor: pointer; }
+        button:hover { background: #9333ea; }
+        .run-all { background: #3b82f6; width: 100%; padding: 12px; margin-bottom: 20px; font-weight: 700; text-transform: uppercase; }
+        #logs { margin-top: 20px; background: #000; padding: 12px; font-family: monospace; font-size: 12px; color: #0f0; border-radius: 4px; height: 200px; overflow-y: auto; display: none; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🛠️ Ankurah QA Smoke Test</h1>
+        <button class="run-all" onclick="runAll()">Run All Tests</button>
+
+        <div id="test-list">
+            <div class="row">
+                <div class="label">1. Victim Auth (OTP 123456)</div>
+                <div class="status pending" id="s1">PENDING</div>
+                <button onclick="testVictimAuth(1)">Test</button>
+            </div>
+            <div class="row">
+                <div class="label">2. Police Auth (Badge 101/pass)</div>
+                <div class="status pending" id="s2">PENDING</div>
+                <button onclick="testPoliceAuth(2)">Test</button>
+            </div>
+            <div class="row">
+                <div class="label">3. Distress Trigger (Victim JWT)</div>
+                <div class="status pending" id="s3">PENDING</div>
+                <button onclick="testTrigger(3)">Test</button>
+            </div>
+            <div class="row">
+                <div class="label">4. Distress Live (Police JWT)</div>
+                <div class="status pending" id="s4">PENDING</div>
+                <button onclick="testLiveFetch(4)">Test</button>
+            </div>
+            <div class="row">
+                <div class="label">5. Distress Mine (Victim JWT)</div>
+                <div class="status pending" id="s5">PENDING</div>
+                <button onclick="testMineFetch(5)">Test</button>
+            </div>
+            <div class="row">
+                <div class="label">6. Safe Zone Post</div>
+                <div class="status pending" id="s6">PENDING</div>
+                <button onclick="testSafeZone(6)">Test</button>
+            </div>
+            <div class="row">
+                <div class="label">7. Status Update (Responding)</div>
+                <div class="status pending" id="s7">PENDING</div>
+                <button onclick="testStatusUpdate(7)">Test</button>
+            </div>
+            <div class="row">
+                <div class="label">8. WebSocket Auth & Room</div>
+                <div class="status pending" id="s8">PENDING</div>
+                <button onclick="testWS(8)">Test</button>
+            </div>
+            <div class="row">
+                <div class="label">9. Geolocation API</div>
+                <div class="status pending" id="s9">PENDING</div>
+                <button onclick="testGeo(9)">Test</button>
+            </div>
+            <div class="row">
+                <div class="label">10. Motion Sensors (Needs HTTPS)</div>
+                <div class="status pending" id="s10">PENDING</div>
+                <button onclick="testMotion(10)">Test</button>
+            </div>
+        </div>
+
+        <div id="logs"></div>
+    </div>
+
+    <script src="https://cdn.socket.io/4.5.4/socket.io.min.js"></script>
+    <script>
+        const BACKEND_URL = "http://localhost:8000";
+        let vicToken = "";
+        let polToken = "";
+        let lastDistressId = "";
+
+        function log(msg) {
+            const l = document.getElementById('logs');
+            l.style.display = 'block';
+            l.innerHTML += `> ${msg}<br>`;
+            l.scrollTop = l.scrollHeight;
+        }
+
+        function setStatus(id, pass) {
+            const s = document.getElementById('s'+id);
+            s.className = "status " + (pass ? "pass" : "fail");
+            s.innerText = pass ? "PASS" : "FAIL";
+        }
+
+        async function runAll() {
+            log("--- STARTING SMOKE TEST ---");
+            await testVictimAuth(1);
+            await testPoliceAuth(2);
+            await testTrigger(3);
+            await testLiveFetch(4);
+            await testMineFetch(5);
+            await testSafeZone(6);
+            await testStatusUpdate(7);
+            await testWS(8);
+            await testGeo(9);
+            await testMotion(10);
+            log("--- TESTS COMPLETED ---");
+        }
+
+        async function testVictimAuth(id) {
+            try {
+                const res = await fetch(`${BACKEND_URL}/auth/victim`, {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({phone: "+911234567890", otp: "123456"})
+                });
+                const data = await res.json();
+                vicToken = data.token;
+                log(`Victim Auth: ${res.status}`);
+                setStatus(id, res.ok && vicToken);
+            } catch(e) { setStatus(id, false); log(`ERR: ${e.message}`); }
+        }
+
+        async function testPoliceAuth(id) {
+            try {
+                const res = await fetch(`${BACKEND_URL}/auth/police`, {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({badge_id: "POL101", password: "password123"})
+                });
+                const data = await res.json();
+                polToken = data.token;
+                log(`Police Auth: ${res.status}`);
+                setStatus(id, res.ok && polToken);
+            } catch(e) { setStatus(id, false); log(`ERR: ${e.message}`); }
+        }
+
+        async function testTrigger(id) {
+            try {
+                const res = await fetch(`${BACKEND_URL}/api/distress`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${vicToken}`
+                    },
+                    body: JSON.stringify({lat: 12.9716, lng: 77.5946, timestamp: new Date().toISOString(), trigger_type: "tap"})
+                });
+                const data = await res.json();
+                lastDistressId = data.alert.id;
+                log(`Distress Trigger: ${res.status} (ID: ${lastDistressId})`);
+                setStatus(id, res.ok);
+            } catch(e) { setStatus(id, false); log(`ERR: ${e.message}`); }
+        }
+
+        async function testLiveFetch(id) {
+            try {
+                const res = await fetch(`${BACKEND_URL}/api/distress/live`, {
+                    headers: {'Authorization': `Bearer ${polToken}`}
+                });
+                log(`Live Fetch: ${res.status}`);
+                setStatus(id, res.ok);
+            } catch(e) { setStatus(id, false); }
+        }
+
+        async function testMineFetch(id) {
+            try {
+                const res = await fetch(`${BACKEND_URL}/api/distress/mine`, {
+                    headers: {'Authorization': `Bearer ${vicToken}`}
+                });
+                log(`Mine Fetch: ${res.status}`);
+                setStatus(id, res.ok);
+            } catch(e) { setStatus(id, false); }
+        }
+
+        async function testSafeZone(id) {
+            try {
+                const res = await fetch(`${BACKEND_URL}/api/safe-zones`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${vicToken}`
+                    },
+                    body: JSON.stringify({victim_id: "+911234567890", label: "Home", lat: 12.9716, lng: 77.5946, radius_meters: 100})
+                });
+                log(`Safe Zone Post: ${res.status}`);
+                setStatus(id, res.ok);
+            } catch(e) { setStatus(id, false); }
+        }
+
+        async function testStatusUpdate(id) {
+            try {
+                const res = await fetch(`${BACKEND_URL}/api/distress/${lastDistressId}/status`, {
+                    method: 'PATCH',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${polToken}`
+                    },
+                    body: JSON.stringify({status: "responding"})
+                });
+                log(`Status Update: ${res.status}`);
+                setStatus(id, res.ok);
+            } catch(e) { setStatus(id, false); }
+        }
+
+        async function testWS(id) {
+            return new Promise((resolve) => {
+                const socket = io(BACKEND_URL, { query: { token: polToken } });
+                socket.on('connect', () => {
+                    log("WS Connected as Police");
+                    setStatus(id, true);
+                    socket.disconnect();
+                    resolve();
+                });
+                socket.on('connect_error', (e) => {
+                    log(`WS Error: ${e.message}`);
+                    setStatus(id, false);
+                    resolve();
+                });
+            });
+        }
+
+        function testGeo(id) {
+            const avail = "geolocation" in navigator;
+            log(`Geo Available: ${avail}`);
+            setStatus(id, avail);
+        }
+
+        function testMotion(id) {
+            const avail = typeof DeviceMotionEvent !== "undefined";
+            log(`Motion Available: ${avail}`);
+            setStatus(id, avail);
+            if(!avail) log("HINT: Sensory access requires HTTPS/Localhost.");
+        }
+    </script>
+</body>
+</html>
