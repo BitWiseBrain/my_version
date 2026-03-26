@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ankurah | Police Login</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div id="login-page">
+        <div class="login-card">
+            <h3>🛡️ ANKURAH</h3>
+            <p style="font-size:12px; color: var(--text-muted); margin-bottom: 30px;">Police Command Access</p>
+            
+            <div id="login-error" style="color:var(--status-red); font-size:11px; margin-bottom:15px; display:none;">Invalid credentials</div>
+            
+            <form onsubmit="doLogin(event)">
+                <div class="form-group">
+                    <label>Badge Number</label>
+                    <input type="text" id="badge" placeholder="e.g. POL101" required>
+                </div>
+                <div class="form-group">
+                    <label>Access Password</label>
+                    <input type="password" id="pass" placeholder="••••••••" required>
+                </div>
+                
+                <button type="submit" class="login-btn">Secure Login</button>
+            </form>
+            
+            <p style="font-size: 10px; color: var(--text-muted); margin-top: 30px; text-transform: uppercase;">Classified access only</p>
+        </div>
+    </div>
+
+    <script>
+        const BACKEND_URL = "http://localhost:8000";
+        async function doLogin(e) {
+            e.preventDefault();
+            const badge = document.getElementById('badge').value;
+            const pass = document.getElementById('pass').value;
+            const error = document.getElementById('login-error');
+            
+            try {
+                const res = await fetch(`${BACKEND_URL}/api/auth/officer/login`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ badge_number: badge, password: pass })
+                });
+                const data = await res.json();
+                if (res.ok) {
+                    localStorage.setItem("ankurah_p_token", data.access_token);
+                    window.location.href = "dashboard.html";
+                } else {
+                    error.style.display = 'block';
+                    error.innerText = data.detail;
+                }
+            } catch(e) {
+                error.style.display = 'block';
+                error.innerText = "Connection error";
+            }
+        }
+
+        // Check already logged in
+        if (localStorage.getItem("ankurah_p_token")) {
+             window.location.href = "dashboard.html";
+        }
+    </script>
+</body>
+</html>

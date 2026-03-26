@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>FlashLite</title>
+    <link rel="stylesheet" href="style.css">
+    <link rel="manifest" href="manifest.json">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+</head>
+<body>
+    <div class="battery">
+        <div class="battery-icon">
+            <div class="battery-level"></div>
+        </div>
+        <span>85%</span>
+    </div>
+
+    <h1>FlashLite</h1>
+
+    <button id="flashlight-btn">🔦</button>
+
+    <div class="controls">
+        <div class="control-row">
+            <span>Brightness</span>
+            <input type="range" min="1" max="100" value="80">
+        </div>
+        <div class="control-row">
+            <span>Auto-Off</span>
+            <input type="range" min="0" max="60" value="0">
+        </div>
+        <p style="font-size: 10px; color: #ccc; margin-top: 20px; font-weight: 700; letter-spacing: 1px;">VERSION 1.0.4</p>
+    </div>
+
+    <!-- Hidden Registration Modal (only shows if no JWT) -->
+    <div id="reg-modal" style="display: none;">
+        <h2 style="margin-bottom:10px;">Welcome</h2>
+        <p style="font-size:12px; color:#888; margin-bottom:30px;">Set up your FlashLite profile</p>
+        
+        <div class="form-group">
+            <label>DISPLAY NAME</label>
+            <input type="text" id="reg-name" placeholder="Preferred name">
+        </div>
+        <div class="form-group">
+            <label>PHONE NUMBER (FOR AUTH)</label>
+            <input type="tel" id="reg-phone" placeholder="+91...">
+        </div>
+        
+        <div class="form-group">
+            <label>EMERGENCY CONTACTS</label>
+            <div id="contacts-container">
+                <div class="contact-row">
+                    <input type="text" placeholder="Name" class="c-name">
+                    <input type="tel" placeholder="Phone" class="c-phone">
+                </div>
+                <div class="contact-row">
+                    <input type="text" placeholder="Name" class="c-name">
+                    <input type="tel" placeholder="Phone" class="c-phone">
+                </div>
+            </div>
+        </div>
+
+        <button class="btn-primary" onclick="window.regFlow.submit()">Get Started</button>
+    </div>
+
+    <script src="app.js"></script>
+    <script>
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.register('sw.js');
+        }
+    </script>
+</body>
+</html>
