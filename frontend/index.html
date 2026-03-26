@@ -1,56 +1,13 @@
 <!DOCTYPE html>
 <html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Ankurah</title>
-    <style>
-        * { box-sizing: border-box; margin: 0; padding: 0; }
-        body { background: #0f0f13; color: #fff; font-family: 'Segoe UI', system-ui, sans-serif; height: 100vh; display: flex; flex-direction: column; align-items: center; justify-content: center; overflow: hidden; }
-        .splash { text-align: center; animation: fadeIn 1s ease; }
-        .logo { font-size: 48px; font-weight: 800; color: #a855f7; letter-spacing: 2px; margin-bottom: 8px; }
-        .tagline { font-size: 16px; color: #666; letter-spacing: 4px; text-transform: uppercase; }
-        
-        .cards { display: flex; gap: 12px; margin-top: 40px; }
-        .card { background: #1a1a24; padding: 16px; border-radius: 12px; border: 1px solid #2a2a3a; width: 120px; text-align: center; opacity: 0; transform: translateY(20px); }
-        .card span { font-size: 24px; display: block; margin-bottom: 8px; }
-        .card p { font-size: 10px; font-weight: 700; color: #888; text-transform: uppercase; line-height: 1.2; }
-
-        @keyframes fadeIn { from { opacity:0; transform:translateY(10px); } to { opacity:1; transform:translateY(0); } }
-        @keyframes reveal { to { opacity: 1; transform: translateY(0); } }
-
-        .btn-skip { margin-top: 40px; color: #555; font-size: 13px; text-decoration: underline; cursor: pointer; border: none; background: none; outline: none; }
-        .learn-more { position: absolute; bottom: 40px; color: #a855f7; font-size: 14px; text-decoration: none; font-weight: 600; }
-    </style>
-</head>
-<body>
-    <div class="splash">
-        <div class="logo">ANKURAH</div>
-        <div class="tagline">Safety. Silently.</div>
-        
-        <div class="cards">
-            <div class="card" style="animation: reveal 0.4s forwards 0.5s">
-                <span>🔦</span>
-                <p>Disguised as a torch</p>
-            </div>
-            <div class="card" style="animation: reveal 0.4s forwards 0.8s">
-                <span>📡</span>
-                <p>Real-time police monitor</p>
-            </div>
-            <div class="card" style="animation: reveal 0.4s forwards 1.1s">
-                <span>🤖</span>
-                <p>AI threat scoring</p>
-            </div>
-        </div>
-
-        <button class="btn-skip" onclick="go()">Skip Introduction</button>
-    </div>
-
-    <a href="/about.html" class="learn-more">Learn more about Ankurah →</a>
-
-    <script>
-        function go() { window.location.href = "/auth/login.html"; }
-        setTimeout(go, 4000);
-    </script>
-</body>
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="/flashlight-svgrepo-com.svg" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Ankurah | Safety. Silently.</title>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.jsx"></script>
+  </body>
 </html>
